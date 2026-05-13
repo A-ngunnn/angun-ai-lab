@@ -106,6 +106,14 @@ def parse_sale_input(user_input: str) -> dict | None:
     return None
 
 
+def _format_success_message(result: dict) -> str:
+    """Format successful tool result into user message with defensive access"""
+    menu = result.get("menu", "?")
+    quantity = result.get("quantity", 1)
+    total = result.get("total", 0)
+    return f"✅ บันทึกสำเร็จ: {menu} x{quantity} = {total} บาท"
+
+
 def execute_action(action_data: dict) -> str:
     action = action_data.get("action")
     args = action_data.get("args", {})
@@ -126,13 +134,13 @@ def execute_action(action_data: dict) -> str:
     try:
         result = TOOLS[action](**args)
         write_trace("tool_result", {"action": action, "result": result})
-        return (
-            f"✅ บันทึกสำเร็จ: {result['menu']} "
-            f"x{result['quantity']} = {result['total']} บาท"
-        )
-    except (ValueError, TypeError) as e:
+        return _format_success_message(result)
+    except (ValueError, TypeError, KeyError) as e:
         write_trace("tool_error", {"action": action, "error": str(e)})
         return f"❌ ข้อมูลไม่ถูกต้อง: {e}"
+    except Exception as e:
+        write_trace("tool_error", {"action": action, "error": f"Unexpected error: {str(e)}"})
+        return f"❌ เกิดข้อผิดพลาด: {e}"
 
 
 def run_agent(user_input: str) -> str:
@@ -194,13 +202,13 @@ def run_agent(user_input: str) -> str:
     try:
         result = TOOLS[action](**args)
         write_trace("tool_result", {"action": action, "result": result})
-        return (
-            f"✅ บันทึกสำเร็จ: {result['menu']} "
-            f"x{result['quantity']} = {result['total']} บาท"
-        )
-    except (ValueError, TypeError) as e:
+        return _format_success_message(result)
+    except (ValueError, TypeError, KeyError) as e:
         write_trace("tool_error", {"action": action, "error": str(e)})
         return f"❌ ข้อมูลไม่ถูกต้อง: {e}"
+    except Exception as e:
+        write_trace("tool_error", {"action": action, "error": f"Unexpected error: {str(e)}"})
+        return f"❌ เกิดข้อผิดพลาด: {e}"
 
 
 if __name__ == "__main__":
